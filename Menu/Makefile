@@ -7,14 +7,14 @@ HEADERS = odbc.h
 
 EXE = menu
 OBJ = $(EXE).o
-#all : $(EXE)
+all : $(EXE)
 
 
 %.o: %.c $(HEADERS)
 	@echo Compiling $<...
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$EXE: $(DEPS) $(OBJ)
+$(EXE): $(DEPS) $(OBJ)
 	$(CC) -o $(EXE) $(OBJ) $(LDLIBS)
 
 clean :

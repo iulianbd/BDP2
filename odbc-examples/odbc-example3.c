@@ -39,7 +39,7 @@ int main(void) {
         char query[BufferLength + 28];
         /* snprintf is not defined if ansi flag is enabled */
         (void) snprintf(query, (size_t)(BufferLength + 27), "select y from a where x = %s;", x);
-
+        printf("query = %s\n", query);
         (void) SQLExecDirect(stmt, (SQLCHAR*) query, SQL_NTS);
 
         (void) SQLBindCol(stmt, 1, SQL_C_CHAR, (SQLCHAR*) y, BufferLength , NULL);
