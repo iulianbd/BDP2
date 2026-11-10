@@ -4,13 +4,12 @@
 #include <sqlext.h>
 #include "odbc.h"
 #include "products.h"
+#include "orders.h"
 #include "customers.h"
 
-void orders_menu(SQLHDBC dbc);
-
-int show_main_menu(void) {
+static int show_main_menu(void) {
     int choice = 0;
-    char buf[16];
+    char buf[16] = "";
 
     printf("\n (1) Products\n");
     printf(" (2) Orders\n");
@@ -19,7 +18,7 @@ int show_main_menu(void) {
     printf("Enter a number that corresponds to your choice > ");
     (void) fflush(stdout);
     
-    if (fgets(buf, sizeof(buf), stdin) != NULL) {
+    if (fgets(buf, (int)sizeof(buf), stdin) != NULL) {
         choice = atoi(buf);
     }
     return choice;
@@ -55,6 +54,6 @@ int main(void) {
         }
     } while (choice != 4);
 
-    odbc_disconnect(env, dbc);
+    (void) odbc_disconnect(env, dbc);
     return EXIT_SUCCESS;
 }
