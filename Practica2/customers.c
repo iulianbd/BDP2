@@ -4,14 +4,23 @@
 #include "customers.h"
 #include "odbc.h"
 
+/* Estructuras de almacenamiento para paginacion en memoria */
 typedef struct { int n; char cn[51]; char fn[51]; char ln[51]; } ResFind;
 typedef struct { char pn[71]; int t; } ResProd;
 
+/**
+ * @brief Busca clientes por coincidencias parciales en nombre o apellido.
+ *        Muestra los resultados con paginacion interactiva.
+ * 
+ * @param dbc Manejador de conexion a la base de datos.
+ * @author Raducu Iulian Bidila
+ */
 static void customer_find(SQLHDBC dbc) {
     SQLHSTMT stmt = NULL;
     char input[64] = "", pattern[70] = "";
     int cnum = 0;
     char cname[51] = "", fname[51] = "", lname[51] = "";
+    
     ResFind* results = NULL;
     int count = 0, capacity = 10;
     int page = 0, total_pages = 0, start = 0, end = 0, i = 0;
@@ -21,6 +30,8 @@ static void customer_find(SQLHDBC dbc) {
     (void) fflush(stdout);
     if (!fgets(input, (int)sizeof(input), stdin)) return;
     input[strcspn(input, "\r\n")] = '\0';
+    
+    /* Envolvemos el texto entre porcentajes para la clausula LIKE */
     (void) snprintf(pattern, sizeof(pattern), "%%%s%%", input);
 
     (void) SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
@@ -34,12 +45,14 @@ static void customer_find(SQLHDBC dbc) {
             (void) SQLBindCol(stmt, 3, SQL_C_CHAR, (SQLCHAR*)fname, (SQLLEN)sizeof(fname), NULL);
             (void) SQLBindCol(stmt, 4, SQL_C_CHAR, (SQLCHAR*)lname, (SQLLEN)sizeof(lname), NULL);
 
+            /* Reserva inicial de memoria para los resultados */
             results = calloc((size_t)capacity, sizeof(ResFind));
             if (results == NULL) {
                 (void) SQLFreeHandle(SQL_HANDLE_STMT, stmt);
                 return;
             }
 
+            /* Almacenamiento dinamico de los registros */
             while (SQL_SUCCEEDED(SQLFetch(stmt))) {
                 if (count >= capacity) {
                     ResFind* temp = NULL;
@@ -62,6 +75,7 @@ static void customer_find(SQLHDBC dbc) {
                 count++;
             }
 
+            /* Logica interactiva de paginacion */
             if (count == 0) {
                 printf("No se encontraron clientes.\n");
             } else {
@@ -94,12 +108,20 @@ static void customer_find(SQLHDBC dbc) {
     (void) SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 }
 
+/**
+ * @brief Lista los productos comprados por un cliente concreto con el recuento total.
+ *        Muestra los resultados con paginacion interactiva.
+ * 
+ * @param dbc Manejador de conexion a la base de datos.
+ * @author Raducu Iulian Bidila
+ */
 static void customer_list_products(SQLHDBC dbc) {
     SQLHSTMT stmt = NULL;
     char input[32] = "";
     int cnum = 0;
     char pname[71] = "";
     int total = 0;
+    
     ResProd* results = NULL;
     int count = 0, capacity = 10;
     int page = 0, total_pages = 0, start = 0, end = 0, i = 0;
@@ -118,12 +140,14 @@ static void customer_list_products(SQLHDBC dbc) {
             (void) SQLBindCol(stmt, 1, SQL_C_CHAR, (SQLCHAR*)pname, (SQLLEN)sizeof(pname), NULL);
             (void) SQLBindCol(stmt, 2, SQL_C_SLONG, &total, 0, NULL);
 
+            /* Reserva inicial de memoria */
             results = calloc((size_t)capacity, sizeof(ResProd));
             if (results == NULL) {
                 (void) SQLFreeHandle(SQL_HANDLE_STMT, stmt);
                 return;
             }
 
+            /* Almacenamiento y expansion dinamica */
             while (SQL_SUCCEEDED(SQLFetch(stmt))) {
                 if (count >= capacity) {
                     ResProd* temp = NULL;
@@ -144,6 +168,7 @@ static void customer_list_products(SQLHDBC dbc) {
                 count++;
             }
 
+            /* Logica interactiva de paginacion */
             if (count == 0) {
                 printf("No se encontraron productos para este cliente.\n");
             } else {
@@ -176,11 +201,19 @@ static void customer_list_products(SQLHDBC dbc) {
     (void) SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 }
 
+/**
+ * @brief Calcula y muestra el saldo (balance) de un cliente a traves de subconsultas COALESCE.
+ * 
+ * @param dbc Manejador de conexion a la base de datos.
+ * @author Raducu Iulian Bidila
+ */
 static void customer_balance(SQLHDBC dbc) {
     SQLHSTMT stmt = NULL;
     char input[32] = "";
     int cnum = 0;
     double balance = 0.0;
+    
+    /* Consulta optimizada que transfiere el calculo al motor de la base de datos */
     char* query = "SELECT COALESCE((SELECT SUM(amount) FROM payments WHERE customernumber = ?), 0) - COALESCE((SELECT SUM(quantityordered * priceeach) FROM orderdetails od JOIN orders o ON od.ordernumber = o.ordernumber WHERE o.customernumber = ?), 0)";
 
     printf("Enter customer number > ");
@@ -189,7 +222,6 @@ static void customer_balance(SQLHDBC dbc) {
     cnum = atoi(input);
 
     (void) SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-    
     if (SQL_SUCCEEDED(SQLPrepare(stmt, (SQLCHAR*)query, SQL_NTS))) {
         (void) SQLBindParameter(stmt, 1, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &cnum, 0, NULL);
         (void) SQLBindParameter(stmt, 2, SQL_PARAM_INPUT, SQL_C_SLONG, SQL_INTEGER, 0, 0, &cnum, 0, NULL);
@@ -208,6 +240,12 @@ static void customer_balance(SQLHDBC dbc) {
     (void) SQLFreeHandle(SQL_HANDLE_STMT, stmt);
 }
 
+/**
+ * @brief Submenu de operaciones relacionadas con Customers.
+ * 
+ * @param dbc Manejador de conexion a la base de datos.
+ * @author Raducu Iulian Bidila
+ */
 void customers_menu(SQLHDBC dbc) {
     int choice = 0;
     char buf[16] = "";
