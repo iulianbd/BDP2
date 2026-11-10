@@ -6,7 +6,7 @@
 
 /* CONNECTION PARAMETERS, ADAPT TO YOUR SCENARIO */
 #define CONNECTION_PARS "driver={PostgreSQL ANSI};uid=alumnodb;" \
-        "pwd=alumnodb;server=localhost;database=test01"
+        "pwd=alumnodb;server=localhost;database=classicmodels"
 
 /* report most recient error */
 void odbc_extract_error(char *fn, SQLHANDLE handle, SQLSMALLINT type);
